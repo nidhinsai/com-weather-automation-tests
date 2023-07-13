@@ -9,59 +9,91 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Properties;
 
+/**
+ * Utility class for loading test data and configuration properties.
+ */
 public class TestDataUtils {
-    protected static final Logger logger = LoggerFactory.getLogger(TestDataUtils.class);
-    private static final String TEST_RESOURCES_ROOT = "src/test/resources/";
-    private static final String CONFIG_FILE_PATH = TEST_RESOURCES_ROOT + "config.properties";
-    private static final String TEST_DATA_FILE_PATH = TEST_RESOURCES_ROOT + "testdata/test_data.yml";
+    private static final Logger logger = LoggerFactory.getLogger(TestDataUtils.class);
+
     private static String environment;
     private static String driverLocation;
     private static boolean isHeadless;
     private static String username;
     private static String password;
 
-    public static void loadConfigProperties() throws IOException {
+    /**
+     * Loads the configuration properties.
+     *
+     * @param configFilePath the path to the configuration properties file
+     * @throws IOException if an I/O error occurs while reading the file
+     */
+    public static void loadConfigProperties(String configFilePath) throws IOException {
         Properties properties = new Properties();
-        try (FileInputStream fis = new FileInputStream(CONFIG_FILE_PATH)) {
+        try (FileInputStream fis = new FileInputStream(configFilePath)) {
             logger.info("Loading configuration properties");
             properties.load(fis);
             environment = properties.getProperty("environment");
             driverLocation = properties.getProperty("driver_location");
             isHeadless = Boolean.parseBoolean(properties.getProperty("is_headless"));
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            logger.error("Failed to load configuration properties");
+        } catch (IOException ex) {
+            logger.error("Failed to load configuration properties", ex);
+            throw ex;
         }
     }
 
-    public static void loadTestData() throws IOException {
-        try (FileInputStream fileInputStream = new FileInputStream(TEST_DATA_FILE_PATH)) {
+    /**
+     * Loads the test data.
+     *
+     * @param testDataFilePath the path to the test data file
+     * @throws IOException if an I/O error occurs while reading the file
+     */
+    public static void loadTestData(String testDataFilePath) throws IOException {
+        try (FileInputStream fis = new FileInputStream(testDataFilePath)) {
             logger.info("Loading test data");
             Yaml yaml = new Yaml();
-            Map<String, Map<String, String>> credentials = yaml.load(fileInputStream);
-            Map<String, String> environmentData = credentials.get(environment);
+            Map<String, Map<String, String>> testData = yaml.load(fis);
+            Map<String, String> environmentData = testData.get(environment);
             username = environmentData.get("username");
             password = environmentData.get("password");
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            logger.error("Failed to load test data");
+        } catch (IOException ex) {
+            logger.error("Failed to load test data", ex);
+            throw ex;
         }
     }
 
+    /**
+     * Returns the driver location.
+     *
+     * @return the driver location
+     */
     public static String getDriverLocation() {
         return driverLocation;
     }
 
+    /**
+     * Returns the username.
+     *
+     * @return the username
+     */
     public static String getUsername() {
         return username;
     }
 
+    /**
+     * Returns the password.
+     *
+     * @return the password
+     */
     public static String getPassword() {
         return password;
     }
 
-    public static Boolean isHeadless() {
+    /**
+     * Returns whether the test is running in headless mode.
+     *
+     * @return true if the test is running in headless mode, false otherwise
+     */
+    public static boolean isHeadless() {
         return isHeadless;
     }
-
 }

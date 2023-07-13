@@ -12,8 +12,16 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
+/**
+ * TestListener class is responsible for capturing screenshots on test failure.
+ */
 public class TestListener implements ITestListener {
 
+    /**
+     * Method to capture screenshot on test failure.
+     *
+     * @param result The test result object.
+     */
     @Override
     public void onTestFailure(ITestResult result) {
         WebDriver driver = (WebDriver) result.getTestContext().getAttribute("WebDriver");
