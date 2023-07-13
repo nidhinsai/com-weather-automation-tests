@@ -1,0 +1,10 @@
+#provide your username and password for testing
+prod:
+  username: prod_username
+  password: prod_password
+stage:
+  username: stage_username
+  password: stage_password
+beta:
+  username: beta_username
+  password: beta_password
