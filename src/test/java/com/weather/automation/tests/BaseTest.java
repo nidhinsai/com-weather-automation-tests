@@ -1,8 +1,8 @@
 package com.weather.automation.tests;
 
 import com.weather.automation.listeners.TestListener;
-import com.weather.automation.utils.DriverUtils;
-import com.weather.automation.utils.TestDataUtils;
+import com.weather.utils.DriverUtils;
+import com.weather.utils.TestDataUtils;
 import com.weather.pages.WeatherHomePage;
 import org.openqa.selenium.WebDriver;
 import org.slf4j.Logger;
@@ -61,7 +61,7 @@ public class BaseTest {
             TestDataUtils.loadConfigProperties(CONFIG_FILE_PATH);
             TestDataUtils.loadTestData(TEST_DATA_FILE_PATH);
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Class setup failed.", e);
         }
         driver = DriverUtils.getDriver();
         getTestContext().setAttribute("WebDriver", driver);

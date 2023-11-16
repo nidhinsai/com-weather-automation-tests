@@ -1,6 +1,6 @@
-package com.weather.automation.helpers;
+package com.weather.helpers;
 
-import com.weather.automation.utils.DriverUtils;
+import com.weather.utils.DriverUtils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebElement;

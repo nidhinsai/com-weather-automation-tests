@@ -1,7 +1,7 @@
 package com.weather.pages;
 
-import com.weather.automation.helpers.ElementActions;
-import com.weather.automation.utils.DriverUtils;
+import com.weather.helpers.ElementActions;
+import com.weather.utils.DriverUtils;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;

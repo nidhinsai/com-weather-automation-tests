@@ -1,4 +1,4 @@
-package com.weather.automation.utils;
+package com.weather.utils;
 
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
