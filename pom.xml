@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -9,8 +8,8 @@
     <version>1.0-SNAPSHOT</version>
 
     <properties>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
+        <maven.compiler.source>14</maven.compiler.source>
+        <maven.compiler.target>14</maven.compiler.target>
     </properties>
 
     <dependencies>
@@ -69,10 +68,11 @@
             <artifactId>guava</artifactId>
             <version>33.2.0-jre</version>
         </dependency>
-
     </dependencies>
+
     <build>
         <plugins>
+            <!-- Maven Compiler Plugin -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -82,6 +82,7 @@
                     <target>14</target>
                 </configuration>
             </plugin>
+
             <!-- Checkstyle Plugin -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -97,10 +98,19 @@
                 </executions>
                 <configuration>
                     <configLocation>src/main/resources/checkstyle.xml</configLocation>
-                    <encoding>UTF-8</encoding>
                     <consoleOutput>true</consoleOutput>
                     <failsOnError>true</failsOnError>
+                    <!-- Exclude Guava from Checkstyle plugin -->
+                    <excludes>com.google.guava:guava</excludes>
                 </configuration>
+                <!-- Explicitly specify Guava version for Checkstyle plugin -->
+                <dependencies>
+                    <dependency>
+                        <groupId>com.google.guava</groupId>
+                        <artifactId>guava</artifactId>
+                        <version>33.2.0-jre</version>
+                    </dependency>
+                </dependencies>
             </plugin>
 
             <!-- PMD Plugin -->
@@ -118,7 +128,18 @@
                 </executions>
                 <configuration>
                     <printFailingErrors>true</printFailingErrors>
+                    <!-- Exclude Guava from PMD plugin -->
+                    <excludeRoots>
+                        <excludeRoot>com.google.guava</excludeRoot>
+                    </excludeRoots>
                 </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.google.guava</groupId>
+                        <artifactId>guava</artifactId>
+                        <version>33.2.0-jre</version>
+                    </dependency>
+                </dependencies>
             </plugin>
 
             <!-- SpotBugs Plugin -->
@@ -137,5 +158,4 @@
             </plugin>
         </plugins>
     </build>
-
 </project>

@@ -13,7 +13,7 @@ import java.util.Properties;
  * Utility class for loading test data and configuration properties.
  */
 public class TestDataUtils {
-    private static final Logger logger = LoggerFactory.getLogger(TestDataUtils.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestDataUtils.class);
 
     private static String environment;
     private static String driverLocation;
@@ -30,13 +30,13 @@ public class TestDataUtils {
     public static void loadConfigProperties(String configFilePath) throws IOException {
         Properties properties = new Properties();
         try (FileInputStream fis = new FileInputStream(configFilePath)) {
-            logger.info("Loading configuration properties");
+            LOGGER.info("Loading configuration properties");
             properties.load(fis);
             environment = properties.getProperty("environment");
             driverLocation = properties.getProperty("driver_location");
             isHeadless = Boolean.parseBoolean(properties.getProperty("is_headless"));
         } catch (IOException ex) {
-            logger.error("Failed to load configuration properties", ex);
+            LOGGER.error("Failed to load configuration properties", ex);
             throw ex;
         }
     }
@@ -49,14 +49,14 @@ public class TestDataUtils {
      */
     public static void loadTestData(String testDataFilePath) throws IOException {
         try (FileInputStream fis = new FileInputStream(testDataFilePath)) {
-            logger.info("Loading test data");
+            LOGGER.info("Loading test data");
             Yaml yaml = new Yaml();
             Map<String, Map<String, String>> testData = yaml.load(fis);
             Map<String, String> environmentData = testData.get(environment);
             username = environmentData.get("username");
             password = environmentData.get("password");
         } catch (IOException ex) {
-            logger.error("Failed to load test data", ex);
+            LOGGER.error("Failed to load test data", ex);
             throw ex;
         }
     }
