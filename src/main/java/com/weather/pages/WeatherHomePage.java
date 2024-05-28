@@ -45,24 +45,14 @@ public class WeatherHomePage {
 
     // Method to select the first city from the list that matches the provided string parameter
     public void selectCity(String cityName) {
-        // Find the search result list container
         WebElement listContainer = driver.findElement(By.id("LocationSearch_listbox"));
-
-        // Find all the buttons representing cities within the list container
         List<WebElement> cityButtons = listContainer.findElements(By.tagName("button"));
-
-        // Iterate through each city button
         for (WebElement cityButton : cityButtons) {
-            // Get the city name from the button text
             String buttonText = cityButton.getText();
-            // Check if the city name matches the provided string parameter
             if (buttonText.contains(cityName)) {
-                // Click on the button to select the city
                 cityButton.click();
-                // Wait for the selection to be completed (if needed)
                 WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
                 wait.until(ExpectedConditions.invisibilityOf(cityButton));
-                // Break the loop after selecting the first matching city
                 break;
             }
         }
