@@ -1,9 +1,9 @@
 package com.weather.automation.tests;
 
 import com.weather.automation.listeners.TestListener;
-import com.weather.utils.DriverUtils;
 import com.weather.utils.TestDataUtils;
 import com.weather.pages.WeatherHomePage;
+import com.weather.utils.WebDriverProvider;
 import org.openqa.selenium.WebDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +28,7 @@ public class BaseTest {
     private static WebDriver driver;
     private static ITestContext testContext;
     protected WeatherHomePage weatherHomePage;
+    private WebDriverProvider webDriverProvider;
 
     /**
      * Returns the test context.
@@ -63,7 +64,8 @@ public class BaseTest {
         } catch (IOException e) {
             logger.error("Class setup failed.", e);
         }
-        driver = DriverUtils.getDriver();
+        webDriverProvider = new WebDriverProvider("Safari");
+        driver = webDriverProvider.getDriver();
         getTestContext().setAttribute("WebDriver", driver);
     }
 
@@ -82,7 +84,7 @@ public class BaseTest {
      */
     @AfterClass(alwaysRun = true)
     protected void tearDown() {
-        DriverUtils.quitDriver();
+        webDriverProvider.quitDriver();
     }
 
     /**
