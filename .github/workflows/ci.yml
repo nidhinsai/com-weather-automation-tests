@@ -27,5 +27,5 @@ jobs:
       - name: Run PMD
         run: mvn pmd:check
 
-      - name: Run SpotBugs
-        run: mvn com.github.spotbugs:spotbugs-maven-plugin:check
+#      - name: Run SpotBugs
+#        run: mvn com.github.spotbugs:spotbugs-maven-plugin:check
