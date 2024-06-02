@@ -35,10 +35,11 @@ public class WeatherHomePage extends BasePage {
         PageFactory.initElements(driver, this);
     }
 
-    public void inputLocation(String location) {
+    public WeatherTodayPage inputLocation(String location) {
         locationSearchInput.click();
         locationSearchInput.sendKeys(location);
         selectCity(location);
+        return new WeatherTodayPage(driver);
     }
 
     // Method to select the first city from the list that matches the provided string parameter
@@ -48,7 +49,6 @@ public class WeatherHomePage extends BasePage {
             String buttonText = cityButton.getText();
             if (buttonText.contains(cityName)) {
                 cityButton.click();
-                waitForElementToDisappear(cityButton);
                 break;
             }
         }
