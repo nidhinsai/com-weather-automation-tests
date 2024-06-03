@@ -129,6 +129,7 @@
                 </executions>
                 <configuration>
                     <printFailingErrors>true</printFailingErrors>
+                    <linkXRef>true</linkXRef>
                     <!-- Exclude Guava from PMD plugin -->
                     <excludeRoots>
                         <excludeRoot>com.google.guava</excludeRoot>
@@ -141,6 +142,21 @@
                         <version>33.2.1-jre</version>
                     </dependency>
                 </dependencies>
+            </plugin>
+
+            <!-- JXR Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jxr-plugin</artifactId>
+                <version>3.1.1</version>
+                <executions>
+                    <execution>
+                        <id>generate-xref</id>
+                        <goals>
+                            <goal>jxr</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
