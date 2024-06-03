@@ -1,8 +1,9 @@
 package com.weather.automation.tests;
 
 import com.weather.automation.listeners.TestListener;
-import com.weather.utils.TestDataUtils;
 import com.weather.pages.WeatherHomePage;
+import com.weather.pages.WeatherTodayPage;
+import com.weather.utils.TestDataUtils;
 import com.weather.utils.WebDriverProvider;
 import org.openqa.selenium.WebDriver;
 import org.slf4j.Logger;
@@ -27,8 +28,9 @@ public class BaseTest {
     private static final Logger logger = LoggerFactory.getLogger(BaseTest.class);
     private static WebDriver driver;
     private static ITestContext testContext;
+    private static WebDriverProvider webDriverProvider;
     protected WeatherHomePage weatherHomePage;
-    private WebDriverProvider webDriverProvider;
+    protected WeatherTodayPage weatherTodayPage;
 
     /**
      * Returns the test context.
@@ -95,5 +97,9 @@ public class BaseTest {
     protected void openUrl(String url) {
         logger.info("Opening URL: " + url);
         driver.get(url);
+    }
+
+    protected String getPageTitle() {
+        return driver.getTitle();
     }
 }
