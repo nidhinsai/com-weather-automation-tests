@@ -6,6 +6,7 @@ import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
 import org.openqa.selenium.support.ui.ExpectedConditions;
@@ -45,21 +46,16 @@ public class WeatherHomePage extends BasePage {
      */
     private void dismissCookieConsent() {
         String[] consentSelectors = {
-            "button[id*='accept']",
-            "button[class*='accept']",
-            "button[data-testid*='accept']",
             "#onetrust-accept-btn-handler",
-            ".onetrust-accept-btn-handler",
-            "[aria-label*='Accept']",
-            "[aria-label*='accept']",
-            "button[class*='consent']",
-            "button[class*='agree']"
+            "button[id*='accept']",
+            "button[data-testid*='accept']",
+            "[aria-label*='Accept']"
         };
-        WebDriverWait shortWait = new WebDriverWait(driver, Duration.ofSeconds(5));
+        WebDriverWait shortWait = new WebDriverWait(driver, Duration.ofSeconds(3));
         for (String selector : consentSelectors) {
             try {
                 WebElement btn = shortWait.until(ExpectedConditions.elementToBeClickable(By.cssSelector(selector)));
-                LOGGER.info("Dismissing cookie/consent dialog with selector: {}", selector);
+                LOGGER.info("Dismissing consent dialog with selector: {}", selector);
                 btn.click();
                 return;
             } catch (TimeoutException | NoSuchElementException e) {
@@ -70,9 +66,9 @@ public class WeatherHomePage extends BasePage {
     }
 
     /**
-     * Scrolls the given element into view using JavaScript and clicks it.
+     * Uses JavaScript to scroll the element into view and click it.
      *
-     * @param element the element to scroll to and click
+     * @param element the element to click
      */
     private void jsClick(WebElement element) {
         JavascriptExecutor js = (JavascriptExecutor) driver;
@@ -82,6 +78,7 @@ public class WeatherHomePage extends BasePage {
 
     /**
      * Inputs a location in the search box and selects the matching city from the dropdown.
+     * Uses Actions class to ensure proper focus and keyboard events are triggered.
      *
      * @param location the city name to search for
      * @return a WeatherTodayPage after selecting the city
@@ -89,22 +86,30 @@ public class WeatherHomePage extends BasePage {
     public WeatherTodayPage inputLocation(String location) {
         LOGGER.info("Searching for location: {}", location);
         dismissCookieConsent();
+
+        // Wait for search input to be present in DOM regardless of clickability
+        WebDriverWait presenceWait = new WebDriverWait(driver, Duration.ofSeconds(30));
+        presenceWait.until(ExpectedConditions.presenceOfElementLocated(By.id("LocationSearch_input")));
+
+        // Use Actions to properly focus and type (fires all native keyboard events)
+        Actions actions = new Actions(driver);
         try {
             waitForElementToBeClickable(locationSearchInput);
-            locationSearchInput.click();
+            actions.moveToElement(locationSearchInput).click().sendKeys(location).perform();
         } catch (TimeoutException e) {
-            LOGGER.warn("Regular click timed out, falling back to JS click for search input: {}", e.getMessage());
+            LOGGER.warn("Regular click timed out, using JS click + Actions sendKeys: {}", e.getMessage());
             jsClick(locationSearchInput);
+            actions.sendKeys(locationSearchInput, location).perform();
         }
-        locationSearchInput.clear();
-        locationSearchInput.sendKeys(location);
+
+        LOGGER.info("Waiting for suggestion listbox to appear");
         waitForElementToBeVisible(locationSearchListBox);
         selectCity(location);
         return new WeatherTodayPage(driver);
     }
 
     /**
-     * Selects the first city from the dropdown that matches the given city name.
+     * Selects the first city from the suggestion dropdown that matches the given city name.
      *
      * @param cityName the city name substring to match
      */
@@ -122,12 +127,14 @@ public class WeatherHomePage extends BasePage {
                     waitForElementToBeClickable(cityButton);
                     cityButton.click();
                 } catch (TimeoutException e) {
-                    LOGGER.warn("Regular city button click timed out, using JS click: {}", e.getMessage());
+                    LOGGER.warn("City button click timed out, using JS click: {}", e.getMessage());
                     jsClick(cityButton);
                 }
                 return;
             }
         }
-        LOGGER.warn("No matching city button found for: {}", cityName);
+        // If no exact match, click the first button as a fallback
+        LOGGER.warn("No matching city button for: {} - clicking first suggestion", cityName);
+        cityButtons.get(0).click();
     }
 }
