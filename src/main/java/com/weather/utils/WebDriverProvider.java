@@ -24,8 +24,8 @@ public class WebDriverProvider {
     /**
      * Initializes a WebDriver instance based on the specified browser type.
      *
-     * @param browser    The type of browser (e.g., "chrome", "firefox").
-     * @param headless   Whether to run in headless mode.
+     * @param browser  The type of browser (e.g., "chrome", "firefox").
+     * @param headless Whether to run in headless mode.
      */
     public WebDriverProvider(String browser, boolean headless) {
         LOGGER.info("Initializing {} driver (headless={})", browser, headless);
@@ -45,8 +45,17 @@ public class WebDriverProvider {
                     options.addArguments("--disable-gpu");
                     options.addArguments("--window-size=1920,1080");
                 }
+                // Reduce bot-detection fingerprint
+                options.addArguments("--disable-blink-features=AutomationControlled");
                 options.addArguments("--disable-extensions");
                 options.addArguments("--remote-allow-origins=*");
+                options.addArguments("--disable-infobars");
+                options.addArguments("--lang=en-US,en;q=0.9");
+                options.addArguments(
+                    "user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+                    + "(KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36");
+                options.setExperimentalOption("excludeSwitches", new String[]{"enable-automation"});
+                options.setExperimentalOption("useAutomationExtension", false);
                 return new ChromeDriver(options);
             }
             case "firefox" -> {
