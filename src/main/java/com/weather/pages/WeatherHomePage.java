@@ -63,7 +63,7 @@ public class WeatherHomePage extends BasePage {
                 btn.click();
                 return;
             } catch (TimeoutException | NoSuchElementException e) {
-                // Try next selector
+                LOGGER.debug("Consent selector not matched: {} - {}", selector, e.getMessage());
             }
         }
         LOGGER.debug("No cookie consent dialog found - proceeding");
@@ -93,7 +93,7 @@ public class WeatherHomePage extends BasePage {
             waitForElementToBeClickable(locationSearchInput);
             locationSearchInput.click();
         } catch (TimeoutException e) {
-            LOGGER.warn("Regular click timed out, falling back to JS click for search input");
+            LOGGER.warn("Regular click timed out, falling back to JS click for search input: {}", e.getMessage());
             jsClick(locationSearchInput);
         }
         locationSearchInput.clear();
@@ -122,7 +122,7 @@ public class WeatherHomePage extends BasePage {
                     waitForElementToBeClickable(cityButton);
                     cityButton.click();
                 } catch (TimeoutException e) {
-                    LOGGER.warn("Regular city button click timed out, using JS click");
+                    LOGGER.warn("Regular city button click timed out, using JS click: {}", e.getMessage());
                     jsClick(cityButton);
                 }
                 return;
