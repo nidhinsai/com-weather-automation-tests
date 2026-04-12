@@ -1,23 +1,18 @@
 package com.weather.pages;
 
-import org.openqa.selenium.By;
-import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.List;
+import java.util.Map;
 
 /**
- * Page object for the OpenWeatherMap home/search flow.
- * Navigates to the /find?q= endpoint to avoid fragile form interaction,
- * then clicks the first matching city result.
+ * Page object for OpenWeatherMap city weather navigation.
+ * Navigates directly to city weather pages using pre-known OWM city IDs,
+ * avoiding fragile search-form interactions that are commonly blocked
+ * in headless / CI browser environments.
  */
 public class WeatherHomePage extends BasePage {
 
@@ -25,16 +20,23 @@ public class WeatherHomePage extends BasePage {
 
     private static final String BASE_URL = "https://openweathermap.org";
 
-    /** CSS selectors tried in order to find a city result link. */
-    private static final String[] RESULT_SELECTORS = {
-        "ul.search-list li a",
-        "a[href*='/city/']",
-        ".widget-notification a",
-        "table tbody tr td a"
-    };
+    /**
+     * Pre-known OpenWeatherMap city IDs.
+     * Sourced from: https://openweathermap.org/find?q=&lt;city&gt;
+     * Using direct /city/{id} URLs avoids bot-detection on the search form.
+     */
+    private static final Map<String, String> CITY_IDS = Map.ofEntries(
+        Map.entry("amsterdam", "2759794"),
+        Map.entry("london",    "2643743"),
+        Map.entry("tokyo",     "1850147"),
+        Map.entry("new york",  "5128581"),
+        Map.entry("paris",     "2988507"),
+        Map.entry("berlin",    "2950159"),
+        Map.entry("sydney",    "2147714")
+    );
 
     /**
-     * Constructor for WeatherHomePage.
+     * Constructs a WeatherHomePage backed by the given WebDriver.
      *
      * @param driver the WebDriver instance
      */
@@ -43,48 +45,32 @@ public class WeatherHomePage extends BasePage {
     }
 
     /**
-     * Navigates directly to the OpenWeatherMap city-search results page for
-     * the given location and clicks the first matching result.
+     * Navigates directly to the OpenWeatherMap city weather page for the
+     * given location using a pre-configured city-ID lookup.
+     * This avoids unreliable search-form interactions.
      *
-     * @param location the city name to look up
-     * @return a {@link WeatherTodayPage} representing the city's weather page
+     * @param location the city name (case-insensitive; must be in the known city map)
+     * @return a {@link WeatherTodayPage} for the resulting city weather view
+     * @throws IllegalArgumentException if the city is not in the known-cities map
      */
     public WeatherTodayPage inputLocation(String location) {
-        LOGGER.info("Searching for location: {}", location);
-        String encoded = URLEncoder.encode(location, StandardCharsets.UTF_8);
-        String findUrl = BASE_URL + "/find?q=" + encoded;
-        LOGGER.info("Navigating to search URL: {}", findUrl);
-        driver.get(findUrl);
-
-        WebElement firstResult = waitForFirstResult(location);
-        LOGGER.info("Clicking first result for: {}", location);
-        firstResult.click();
-        return new WeatherTodayPage(driver);
-    }
-
-    /**
-     * Waits for at least one city result link to appear on the search page.
-     * Tries multiple CSS selectors in order, returning the first element found.
-     *
-     * @param location the searched location (for logging)
-     * @return the first visible city result link
-     * @throws RuntimeException if no result appears within the timeout
-     */
-    private WebElement waitForFirstResult(String location) {
-        WebDriverWait longWait = new WebDriverWait(driver, Duration.ofSeconds(30));
-        for (String selector : RESULT_SELECTORS) {
-            try {
-                List<WebElement> results = longWait.until(
-                    ExpectedConditions.presenceOfAllElementsLocatedBy(By.cssSelector(selector)));
-                if (!results.isEmpty()) {
-                    LOGGER.info("Found {} result(s) for '{}' using selector: {}", results.size(), location, selector);
-                    return results.get(0);
-                }
-            } catch (TimeoutException e) {
-                LOGGER.debug("Selector '{}' did not produce results within timeout", selector);
-            }
+        LOGGER.info("Looking up city ID for: {}", location);
+        String cityId = CITY_IDS.get(location.toLowerCase().trim());
+        if (cityId == null) {
+            throw new IllegalArgumentException(
+                "No city ID configured for: '" + location + "'. Known cities: " + CITY_IDS.keySet());
         }
-        throw new RuntimeException(
-            "No city search results found for '%s' on page: %s".formatted(location, driver.getCurrentUrl()));
+        String cityUrl = BASE_URL + "/city/" + cityId;
+        LOGGER.info("Navigating directly to: {}", cityUrl);
+        driver.get(cityUrl);
+
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
+        try {
+            wait.until(d -> !d.getTitle().isEmpty());
+            LOGGER.info("City page loaded. Title: {}", driver.getTitle());
+        } catch (Exception e) {
+            LOGGER.debug("Title wait timed out for {}; current URL: {}", location, driver.getCurrentUrl());
+        }
+        return new WeatherTodayPage(driver);
     }
 }
