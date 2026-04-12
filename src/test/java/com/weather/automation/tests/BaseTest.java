@@ -17,7 +17,7 @@ import org.testng.annotations.Listeners;
 import java.io.IOException;
 
 /**
- * This class represents the test class for weather automation tests.
+ * Base test class that handles WebDriver lifecycle, config loading, and common utilities.
  */
 @Listeners(TestListener.class)
 public class BaseTest {
@@ -25,37 +25,38 @@ public class BaseTest {
     private static final String TEST_RESOURCES_ROOT = "src/test/resources/";
     private static final String CONFIG_FILE_PATH = TEST_RESOURCES_ROOT + "config.properties";
     private static final String TEST_DATA_FILE_PATH = TEST_RESOURCES_ROOT + "testdata/test_data.yml";
-    private static final Logger logger = LoggerFactory.getLogger(BaseTest.class);
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(BaseTest.class);
+
     private static WebDriver driver;
     private static ITestContext testContext;
     private static WebDriverProvider webDriverProvider;
+
     protected WeatherHomePage weatherHomePage;
     protected WeatherTodayPage weatherTodayPage;
 
     /**
-     * Returns the test context.
+     * Returns the shared test context.
      *
-     * @return the test context
+     * @return the ITestContext
      */
     public static ITestContext getTestContext() {
         return testContext;
     }
 
     /**
-     * Sets the test context.
+     * Sets the shared test context.
      *
-     * @param context the test context
+     * @param context the ITestContext to set
      */
     public static void setTestContext(ITestContext context) {
         testContext = context;
     }
 
     /**
-     * Setup method to be run before the test class.
-     * Loads the config properties and test data.
-     * Initializes the WebDriver and sets it as an attribute in the test context.
+     * Runs before the test class. Loads config/test data and initialises the WebDriver.
      *
-     * @param context the test context
+     * @param context the TestNG test context
      */
     @BeforeClass(alwaysRun = true)
     protected void classSetup(ITestContext context) {
@@ -64,41 +65,53 @@ public class BaseTest {
             TestDataUtils.loadConfigProperties(CONFIG_FILE_PATH);
             TestDataUtils.loadTestData(TEST_DATA_FILE_PATH);
         } catch (IOException e) {
-            logger.error("Class setup failed.", e);
+            LOGGER.error("Class setup failed while loading config/test data", e);
+            throw new RuntimeException("Failed to load test configuration", e);
         }
-        webDriverProvider = new WebDriverProvider("Safari");
+        String browser = TestDataUtils.getBrowser();
+        boolean headless = TestDataUtils.isHeadless();
+        webDriverProvider = new WebDriverProvider(browser, headless);
         driver = webDriverProvider.getDriver();
         getTestContext().setAttribute("WebDriver", driver);
+        LOGGER.info("WebDriver initialised: {} (headless={})", browser, headless);
     }
 
     /**
-     * Method to be run before each test method.
-     * Initializes the WeatherHomePage object.
+     * Runs before each test method. Navigates to the base URL and sets up page objects.
      */
     @BeforeMethod(alwaysRun = true)
     protected void setupMethod() {
+        String baseUrl = TestDataUtils.getBaseUrl();
+        LOGGER.info("Navigating to base URL: {}", baseUrl);
+        driver.get(baseUrl);
         weatherHomePage = new WeatherHomePage(driver);
     }
 
     /**
-     * Method to be run after the test class.
-     * Quits the WebDriver.
+     * Runs after the test class. Quits the WebDriver.
      */
     @AfterClass(alwaysRun = true)
     protected void tearDown() {
-        webDriverProvider.quitDriver();
+        if (webDriverProvider != null) {
+            webDriverProvider.quitDriver();
+        }
     }
 
     /**
-     * Opens the specified URL in the browser.
+     * Navigates the browser to the given URL.
      *
      * @param url the URL to open
      */
     protected void openUrl(String url) {
-        logger.info("Opening URL: " + url);
+        LOGGER.info("Opening URL: {}", url);
         driver.get(url);
     }
 
+    /**
+     * Returns the current page title.
+     *
+     * @return the page title
+     */
     protected String getPageTitle() {
         return driver.getTitle();
     }
