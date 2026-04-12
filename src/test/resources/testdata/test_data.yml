@@ -12,5 +12,3 @@ beta:
 # City names used for data-driven weather search tests
 cities:
   - Amsterdam
-  - London
-  - Tokyo
