@@ -98,7 +98,7 @@ public class BaseTest {
         try {
             JavascriptExecutor js = (JavascriptExecutor) driver;
             js.executeScript(
-                "Object.defineProperty(navigator, \'webdriver\', {get: () => undefined});"
+                "Object.defineProperty(navigator, 'webdriver', {get: () => undefined});"
             );
             LOGGER.debug("Stealth JS applied successfully");
         } catch (Exception e) {
@@ -133,5 +133,14 @@ public class BaseTest {
      */
     protected String getPageTitle() {
         return driver.getTitle();
+    }
+
+    /**
+     * Returns the current browser URL.
+     *
+     * @return the current URL
+     */
+    protected String getCurrentUrl() {
+        return driver.getCurrentUrl();
     }
 }
