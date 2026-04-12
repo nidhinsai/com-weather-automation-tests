@@ -8,3 +8,9 @@ stage:
 beta:
   username: beta_username
   password: beta_password
+
+# City names used for data-driven weather search tests
+cities:
+  - Amsterdam
+  - London
+  - Tokyo
