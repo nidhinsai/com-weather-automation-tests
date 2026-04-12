@@ -5,6 +5,7 @@ import com.weather.pages.WeatherHomePage;
 import com.weather.pages.WeatherTodayPage;
 import com.weather.utils.TestDataUtils;
 import com.weather.utils.WebDriverProvider;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,14 +78,32 @@ public class BaseTest {
     }
 
     /**
-     * Runs before each test method. Navigates to the base URL and sets up page objects.
+     * Runs before each test method. Navigates to the base URL, applies stealth JS,
+     * and sets up page objects.
      */
     @BeforeMethod(alwaysRun = true)
     protected void setupMethod() {
         String baseUrl = TestDataUtils.getBaseUrl();
         LOGGER.info("Navigating to base URL: {}", baseUrl);
         driver.get(baseUrl);
+        applyStealthJs();
         weatherHomePage = new WeatherHomePage(driver);
+    }
+
+    /**
+     * Injects JavaScript to reduce bot-detection signals after page navigation.
+     * Removes the navigator.webdriver property that headless Chrome exposes.
+     */
+    private void applyStealthJs() {
+        try {
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+            js.executeScript(
+                "Object.defineProperty(navigator, \'webdriver\', {get: () => undefined});"
+            );
+            LOGGER.debug("Stealth JS applied successfully");
+        } catch (Exception e) {
+            LOGGER.warn("Could not apply stealth JS: {}", e.getMessage());
+        }
     }
 
     /**
