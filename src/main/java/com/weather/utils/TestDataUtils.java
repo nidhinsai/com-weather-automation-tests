@@ -6,6 +6,8 @@ import org.yaml.snakeyaml.Yaml;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -16,10 +18,12 @@ public class TestDataUtils {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestDataUtils.class);
 
     private static String environment;
-    private static String driverLocation;
+    private static String browser;
+    private static String baseUrl;
     private static boolean isHeadless;
     private static String username;
     private static String password;
+    private static List<String> cities;
 
     /**
      * Loads the configuration properties.
@@ -30,13 +34,14 @@ public class TestDataUtils {
     public static void loadConfigProperties(String configFilePath) throws IOException {
         Properties properties = new Properties();
         try (FileInputStream fis = new FileInputStream(configFilePath)) {
-            LOGGER.info("Loading configuration properties");
+            LOGGER.info("Loading configuration properties from {}", configFilePath);
             properties.load(fis);
-            environment = properties.getProperty("environment");
-            driverLocation = properties.getProperty("driver_location");
-            isHeadless = Boolean.parseBoolean(properties.getProperty("is_headless"));
+            environment = properties.getProperty("environment", "prod");
+            browser = properties.getProperty("browser", "chrome");
+            baseUrl = properties.getProperty("base_url", "https://weather.com");
+            isHeadless = Boolean.parseBoolean(properties.getProperty("is_headless", "true"));
         } catch (IOException ex) {
-            LOGGER.error("Failed to load configuration properties", ex);
+            LOGGER.error("Failed to load configuration properties from {}", configFilePath, ex);
             throw ex;
         }
     }
@@ -47,27 +52,43 @@ public class TestDataUtils {
      * @param testDataFilePath the path to the test data file
      * @throws IOException if an I/O error occurs while reading the file
      */
+    @SuppressWarnings("unchecked")
     public static void loadTestData(String testDataFilePath) throws IOException {
         try (FileInputStream fis = new FileInputStream(testDataFilePath)) {
-            LOGGER.info("Loading test data");
+            LOGGER.info("Loading test data from {}", testDataFilePath);
             Yaml yaml = new Yaml();
-            Map<String, Map<String, String>> testData = yaml.load(fis);
-            Map<String, String> environmentData = testData.get(environment);
-            username = environmentData.get("username");
-            password = environmentData.get("password");
+            Map<String, Object> testData = yaml.load(fis);
+            Map<String, Object> environmentData = (Map<String, Object>) testData.get(environment);
+            username = (String) environmentData.get("username");
+            password = (String) environmentData.get("password");
+            Object citiesObj = testData.get("cities");
+            if (citiesObj instanceof List) {
+                cities = (List<String>) citiesObj;
+            } else {
+                cities = new ArrayList<>();
+            }
         } catch (IOException ex) {
-            LOGGER.error("Failed to load test data", ex);
+            LOGGER.error("Failed to load test data from {}", testDataFilePath, ex);
             throw ex;
         }
     }
 
     /**
-     * Returns the driver location.
+     * Returns the browser to use.
      *
-     * @return the driver location
+     * @return the browser name
      */
-    public static String getDriverLocation() {
-        return driverLocation;
+    public static String getBrowser() {
+        return browser;
+    }
+
+    /**
+     * Returns the base URL.
+     *
+     * @return the base URL
+     */
+    public static String getBaseUrl() {
+        return baseUrl;
     }
 
     /**
@@ -95,5 +116,14 @@ public class TestDataUtils {
      */
     public static boolean isHeadless() {
         return isHeadless;
+    }
+
+    /**
+     * Returns the list of test cities.
+     *
+     * @return list of city names
+     */
+    public static List<String> getCities() {
+        return cities;
     }
 }
