@@ -9,6 +9,8 @@ beta:
   username: beta_username
   password: beta_password
 
-# City names used for data-driven weather search tests
+# City names used for data-driven weather search tests (OpenWeatherMap)
 cities:
   - Amsterdam
+  - London
+  - Tokyo
