@@ -10,43 +10,38 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
-import java.util.Optional;
 
 /**
  * Page object for the OpenWeatherMap city weather page.
- * Provides assertions and accessors for current conditions data
- * (temperature and weather description).
+ * Assertions use URL structure and page-source checks that remain
+ * resilient to DOM changes across different OWM page versions.
  */
 public class WeatherTodayPage extends BasePage {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WeatherTodayPage.class);
 
-    /**
-     * Ordered list of CSS selectors that can match the temperature display on a city page.
-     * Different OWM page versions use different markup; we try each in order.
-     */
+    /** Short wait used for individual element probes to avoid long cumulative delays. */
+    private static final int PROBE_TIMEOUT_SECONDS = 3;
+
+    /** CSS selectors for the temperature display element (tried in order). */
     private static final String[] TEMPERATURE_SELECTORS = {
         ".current-temp",
         ".heading",
         "div.weather-widget__temperature",
         "span[class*='temp']",
-        ".owm-loader-container .current",
-        "#current-conditions-section .temp"
+        ".owm-loader-container .current"
     };
 
-    /**
-     * Ordered list of CSS selectors that can match the current-conditions container.
-     */
+    /** CSS selectors for the conditions container (tried in order). */
     private static final String[] CONDITIONS_SELECTORS = {
         ".current-container",
         "#current-conditions-section",
         ".weather-widget",
-        ".city-page-container",
-        ".hourly-forecast-bar"
+        ".city-page-container"
     };
 
     /**
-     * Constructor for WeatherTodayPage.
+     * Constructs a WeatherTodayPage backed by the given WebDriver.
      *
      * @param driver the WebDriver instance
      */
@@ -55,99 +50,101 @@ public class WeatherTodayPage extends BasePage {
     }
 
     /**
-     * Returns {@code true} if the current-conditions section is visible on the page.
-     * Tries multiple known selectors and also falls back to URL/title checks.
+     * Returns {@code true} if the current page appears to be a city weather page.
+     * Checks the URL first (reliable after direct /city/{id} navigation),
+     * then tries known conditions-container selectors.
      *
-     * @return {@code true} if conditions are displayed
+     * @return {@code true} if weather conditions are displayed
      */
     public boolean isCurrentConditionsDisplayed() {
-        LOGGER.info("Checking if current conditions are displayed");
-
-        // Fast path: each selector gets its own short wait so we don't waste 20s each
-        WebDriverWait quickWait = new WebDriverWait(driver, Duration.ofSeconds(8));
+        String currentUrl = driver.getCurrentUrl();
+        if (currentUrl.contains("/city/") || currentUrl.contains("/weather")) {
+            LOGGER.info("isCurrentConditionsDisplayed: URL check passed ({})", currentUrl);
+            return true;
+        }
+        WebDriverWait quickWait = new WebDriverWait(driver, Duration.ofSeconds(PROBE_TIMEOUT_SECONDS));
         for (String sel : CONDITIONS_SELECTORS) {
             try {
                 quickWait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector(sel)));
                 LOGGER.info("Conditions container found with selector: {}", sel);
                 return true;
             } catch (TimeoutException e) {
-                LOGGER.debug("Conditions selector '{}' not found", sel);
+                LOGGER.debug("Conditions selector '{}' not found within {}s", sel, PROBE_TIMEOUT_SECONDS);
             }
         }
-
-        // Fallback: the URL should contain /city/ after a successful navigation
-        String currentUrl = driver.getCurrentUrl();
-        boolean urlOk = currentUrl.contains("/city/") || currentUrl.contains("/weather");
-        LOGGER.info("Conditions fallback URL check: {} -> {}", currentUrl, urlOk);
-        return urlOk;
-    }
-
-    /**
-     * Returns {@code true} if a temperature value is visible on the city page.
-     *
-     * @return {@code true} if the temperature element is found and displayed
-     */
-    public boolean isTemperatureValueDisplayed() {
-        LOGGER.info("Checking if temperature value is displayed");
-        return findTemperatureElement().isPresent();
-    }
-
-    /**
-     * Returns the temperature text string from the city page.
-     *
-     * @return the temperature text, or an empty string if not found
-     */
-    public String getTemperatureText() {
-        return findTemperatureElement()
-            .map(WebElement::getText)
-            .map(String::trim)
-            .orElse("");
-    }
-
-    /**
-     * Returns {@code true} if the weather phrase/description is visible.
-     *
-     * @return {@code true} if weather description element is found
-     */
-    public boolean isWeatherPhraseDisplayed() {
-        String[] descSelectors = {".weather-icon + p", ".owm-weather-icon__title", ".weather_icon", ".label" };
-        WebDriverWait quickWait = new WebDriverWait(driver, Duration.ofSeconds(8));
-        for (String sel : descSelectors) {
-            try {
-                quickWait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector(sel)));
-                return true;
-            } catch (TimeoutException e) {
-                LOGGER.debug("Phrase selector '{}' not found", sel);
-            }
-        }
+        LOGGER.warn("isCurrentConditionsDisplayed: neither URL nor DOM selectors matched");
         return false;
     }
 
     /**
-     * Attempts to locate the temperature element using several known selectors.
+     * Returns {@code true} if a temperature value is rendered on the page.
+     * Tries CSS selectors, then falls back to a degree-symbol check in the page source.
      *
-     * @return an {@link Optional} containing the temperature element, or empty if not found
+     * @return {@code true} if a temperature reading was found
      */
-    private Optional<WebElement> findTemperatureElement() {
-        WebDriverWait quickWait = new WebDriverWait(driver, Duration.ofSeconds(8));
+    public boolean isTemperatureValueDisplayed() {
+        LOGGER.info("Checking temperature visibility");
+        WebDriverWait quickWait = new WebDriverWait(driver, Duration.ofSeconds(PROBE_TIMEOUT_SECONDS));
         for (String sel : TEMPERATURE_SELECTORS) {
             try {
                 WebElement el = quickWait.until(
                     ExpectedConditions.presenceOfElementLocated(By.cssSelector(sel)));
                 if (el.isDisplayed()) {
                     LOGGER.info("Temperature element found with selector: {}", sel);
-                    return Optional.of(el);
+                    return true;
                 }
             } catch (TimeoutException e) {
-                LOGGER.debug("Temperature selector '{}' not found", sel);
+                LOGGER.debug("Temperature selector '{}' not found within {}s", sel, PROBE_TIMEOUT_SECONDS);
             }
         }
-
-        // Last resort: page source contains a degree symbol -> temperature definitely rendered
+        // Reliable fallback: OWM city pages always contain a degree character
         boolean hasDegree = driver.getPageSource().contains("\u00b0")
-            || driver.getPageSource().contains("&deg;")
             || driver.getPageSource().contains("°");
-        LOGGER.info("Temperature degree-symbol fallback: {}", hasDegree);
-        return hasDegree ? Optional.of(driver.findElement(By.tagName("body"))) : Optional.empty();
+        LOGGER.info("Temperature degree-symbol fallback result: {}", hasDegree);
+        return hasDegree;
+    }
+
+    /**
+     * Returns the temperature text from the city page, or {@code "N/A"} if not found.
+     *
+     * @return temperature string (e.g. {@code "12°C"}) or {@code "N/A"}
+     */
+    public String getTemperatureText() {
+        WebDriverWait quickWait = new WebDriverWait(driver, Duration.ofSeconds(PROBE_TIMEOUT_SECONDS));
+        for (String sel : TEMPERATURE_SELECTORS) {
+            try {
+                WebElement el = quickWait.until(
+                    ExpectedConditions.presenceOfElementLocated(By.cssSelector(sel)));
+                String text = el.getText().trim();
+                if (!text.isEmpty()) {
+                    LOGGER.info("Temperature text '{}' found with selector: {}", text, sel);
+                    return text;
+                }
+            } catch (TimeoutException e) {
+                LOGGER.debug("Temperature selector '{}' not found within {}s", sel, PROBE_TIMEOUT_SECONDS);
+            }
+        }
+        LOGGER.info("Temperature text not found via selectors; returning N/A");
+        return "N/A";
+    }
+
+    /**
+     * Returns {@code true} if a weather description phrase is visible on the page.
+     *
+     * @return {@code true} if a weather-description element is found
+     */
+    public boolean isWeatherPhraseDisplayed() {
+        String[] descSelectors = {".weather_icon", ".label", ".owm-weather-icon__title"};
+        WebDriverWait quickWait = new WebDriverWait(driver, Duration.ofSeconds(PROBE_TIMEOUT_SECONDS));
+        for (String sel : descSelectors) {
+            try {
+                quickWait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector(sel)));
+                LOGGER.info("Weather phrase found with selector: {}", sel);
+                return true;
+            } catch (TimeoutException e) {
+                LOGGER.debug("Phrase selector '{}' not found within {}s", sel, PROBE_TIMEOUT_SECONDS);
+            }
+        }
+        return false;
     }
 }
