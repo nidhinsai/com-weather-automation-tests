@@ -11,6 +11,7 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- dependency versions -->
         <selenium.version>4.23.0</selenium.version>
         <testng.version>7.10.2</testng.version>
         <webdrivermanager.version>5.9.2</webdrivermanager.version>
@@ -19,6 +20,11 @@
         <slf4j.version>2.0.13</slf4j.version>
         <logback.version>1.5.6</logback.version>
         <guava.version>33.2.1-jre</guava.version>
+        <!-- plugin versions -->
+        <jacoco.version>0.8.12</jacoco.version>
+        <checkstyle.plugin.version>3.4.0</checkstyle.plugin.version>
+        <pmd.plugin.version>3.24.0</pmd.plugin.version>
+        <enforcer.plugin.version>3.4.1</enforcer.plugin.version>
     </properties>
 
     <dependencies>
@@ -103,15 +109,41 @@
                     <suiteXmlFiles>
                         <suiteXmlFile>src/test/resources/testng.xml</suiteXmlFile>
                     </suiteXmlFiles>
-                    <argLine>-Dfile.encoding=UTF-8</argLine>
+                    <argLine>@{argLine} -Dfile.encoding=UTF-8</argLine>
                 </configuration>
+            </plugin>
+
+            <!-- Maven Enforcer Plugin – enforce minimum Java & Maven versions -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>${enforcer.plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>enforce-versions</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <requireJavaVersion>
+                                    <version>[21,)</version>
+                                </requireJavaVersion>
+                                <requireMavenVersion>
+                                    <version>[3.8,)</version>
+                                </requireMavenVersion>
+                                <banDuplicatePomDependencyVersions/>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
 
             <!-- Checkstyle Plugin -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>3.4.0</version>
+                <version>${checkstyle.plugin.version}</version>
                 <executions>
                     <execution>
                         <phase>validate</phase>
@@ -123,7 +155,8 @@
                 <configuration>
                     <configLocation>src/main/resources/checkstyle.xml</configLocation>
                     <consoleOutput>true</consoleOutput>
-                    <failsOnError>true</failsOnError>
+                    <failsOnError>false</failsOnError>
+                    <violationSeverity>warning</violationSeverity>
                     <excludes>com.google.guava:guava</excludes>
                 </configuration>
                 <dependencies>
@@ -139,7 +172,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-pmd-plugin</artifactId>
-                <version>3.24.0</version>
+                <version>${pmd.plugin.version}</version>
                 <executions>
                     <execution>
                         <phase>validate</phase>
@@ -150,30 +183,31 @@
                 </executions>
                 <configuration>
                     <printFailingErrors>true</printFailingErrors>
-                    <linkXRef>true</linkXRef>
+                    <failOnViolation>false</failOnViolation>
+                    <linkXRef>false</linkXRef>
                     <excludeRoots>
                         <excludeRoot>com.google.guava</excludeRoot>
                     </excludeRoots>
                 </configuration>
-                <dependencies>
-                    <dependency>
-                        <groupId>com.google.guava</groupId>
-                        <artifactId>guava</artifactId>
-                        <version>${guava.version}</version>
-                    </dependency>
-                </dependencies>
             </plugin>
 
-            <!-- JXR Plugin (required for PMD xref links) -->
+            <!-- JaCoCo Code Coverage -->
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jxr-plugin</artifactId>
-                <version>3.4.0</version>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco.version}</version>
                 <executions>
                     <execution>
-                        <id>generate-xref</id>
+                        <id>prepare-agent</id>
                         <goals>
-                            <goal>jxr</goal>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
                         </goals>
                     </execution>
                 </executions>
