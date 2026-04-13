@@ -40,7 +40,20 @@ jobs:
       - name: Run Tests
         env:
           JAVA_OPTS: "-Dfile.encoding=UTF-8"
-        run: mvn test --file pom.xml
+        run: mvn test --file pom.xml -Dmaven.test.failure.ignore=true
+
+      - name: Check for test failures
+        run: |
+          REPORTS=$(find target/surefire-reports -name '*.xml' 2>/dev/null || true)
+          if [ -z "$REPORTS" ]; then
+            echo "No Surefire reports found — tests may not have run."
+            exit 1
+          fi
+          if grep -l 'failures="[1-9]\|errors="[1-9]' $REPORTS 2>/dev/null | grep -q .; then
+            echo "::error::One or more tests failed."
+            exit 1
+          fi
+          echo "All tests passed."
 
       - name: Upload screenshots on failure
         if: failure()
@@ -56,4 +69,12 @@ jobs:
         with:
           name: surefire-reports
           path: target/surefire-reports/
+          if-no-files-found: ignore
+
+      - name: Upload JaCoCo Coverage Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-coverage
+          path: target/site/jacoco/
           if-no-files-found: ignore
